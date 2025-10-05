@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
-keywords.workspace = true
+keywords = ["glin", "substrate", "types", "codec", "scale"]
 categories.workspace = true
 
 [dependencies]

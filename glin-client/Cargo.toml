@@ -8,12 +8,12 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 documentation.workspace = true
-keywords.workspace = true
+keywords = ["glin", "substrate", "client", "rpc", "blockchain"]
 categories.workspace = true
 
 [dependencies]
 # Local dependencies
-glin-types = { version = "0.1.0", path = "../glin-types" }
+glin-types = { version = "0.1.1", path = "../glin-types" }
 
 # Substrate & RPC
 subxt = { workspace = true }
