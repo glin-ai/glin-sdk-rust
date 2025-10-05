@@ -2,6 +2,8 @@
 //!
 //! Core blockchain client for connecting to GLIN Network and performing RPC operations.
 
+pub mod batch;
+
 use anyhow::Result;
 use subxt::{OnlineClient, PolkadotConfig};
 use subxt::backend::legacy::LegacyRpcMethods;
@@ -10,6 +12,9 @@ use subxt_signer::sr25519::Keypair;
 
 pub type GlinConfig = PolkadotConfig;
 pub type GlinClient = OnlineClient<GlinConfig>;
+
+// Re-export batch operations
+pub use batch::BatchRpc;
 
 /// Create a client connection to GLIN network
 ///

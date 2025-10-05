@@ -42,11 +42,12 @@ Complete Rust SDK for building applications on GLIN Network. Provides **all core
 
 ## 📦 Workspace Structure
 
-This is a Cargo workspace containing three crates:
+This is a Cargo workspace containing four crates:
 
 - **glin-client**: Network connection, accounts, and RPC operations
-- **glin-contracts**: Contract metadata, deployment, and interaction
+- **glin-contracts**: Contract metadata, deployment, interaction, and verification
 - **glin-types**: Shared types and data structures
+- **glin-indexer**: Blockchain indexing utilities (block streaming, event decoding)
 
 ## 🚀 Quick Start
 
@@ -160,14 +161,34 @@ println!("{} Connected!", "✓".green().bold());
 Build high-performance blockchain indexers like [glincscan](https://github.com/glin-ai/glincscan):
 
 ```rust
-use glin_client::GlinClient;
+use glin_client::create_client;
+use glin_indexer::{BlockStream, EventDecoder, ExtrinsicParser};
+use futures::StreamExt;
 
-let mut blocks = client.blocks().subscribe_finalized().await?;
-while let Some(block) = blocks.next().await {
-    // Index block data
-    index_block(&block).await?;
+let client = create_client("wss://testnet.glin.ai").await?;
+let decoder = EventDecoder::new(&client)?;
+let parser = ExtrinsicParser::new();
+
+let mut stream = BlockStream::subscribe_finalized(&client).await?;
+
+while let Some(block) = stream.next().await {
+    let block = block?;
+
+    // Parse extrinsics
+    for ext in block.extrinsics().await?.iter() {
+        let info = parser.parse(&ext?, block.number())?;
+        // Store in database...
+    }
+
+    // Decode events
+    for event in block.events().await?.iter() {
+        let decoded = decoder.decode(&event?)?;
+        // Store in database...
+    }
 }
 ```
+
+See [examples/block_indexer.rs](examples/block_indexer.rs) for a complete example.
 
 ## 🏗️ Projects Using This SDK
 
@@ -182,16 +203,27 @@ glin-sdk-rust/
 ├── glin-client/       # Network & RPC
 │   ├── Connection management
 │   ├── Account utilities
-│   └── Block subscriptions
+│   ├── Block subscriptions
+│   └── Batch operations
 │
 ├── glin-contracts/    # Contract utilities
 │   ├── Metadata fetching
 │   ├── Chain info queries
 │   ├── Encoding/decoding
-│   └── Metadata parsing
+│   ├── Metadata parsing
+│   └── Contract verification
 │
-└── glin-types/        # Shared types
-    └── Common data structures
+├── glin-types/        # Shared types
+│   ├── Block types
+│   ├── Event types
+│   ├── Extrinsic types
+│   ├── Account types
+│   └── Contract types
+│
+└── glin-indexer/      # Indexing utilities (NEW in v0.2.0)
+    ├── BlockStream - Block subscription helper
+    ├── EventDecoder - Event decoding utilities
+    └── ExtrinsicParser - Transaction parsing
 ```
 
 ## 🔗 Related SDKs

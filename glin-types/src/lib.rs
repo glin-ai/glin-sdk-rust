@@ -1,14 +1,18 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Shared types and data structures for GLIN Network
+//!
+//! This crate provides common types used across the GLIN SDK ecosystem.
+//! Types are designed to be lightweight, serializable, and compatible with
+//! Substrate/ink! ecosystems.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod block;
+pub mod event;
+pub mod extrinsic;
+pub mod account;
+pub mod contract;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+// Re-export main types
+pub use block::{Block, BlockHash, BlockHeader};
+pub use event::{Event, EventData};
+pub use extrinsic::{Extrinsic, ExtrinsicInfo};
+pub use account::{AccountId, Balance};
+pub use contract::ContractInfo;
