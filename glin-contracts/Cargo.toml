@@ -13,8 +13,8 @@ categories.workspace = true
 
 [dependencies]
 # Local dependencies
-glin-types = { path = "../glin-types" }
-glin-client = { path = "../glin-client" }
+glin-types = { version = "0.1.0", path = "../glin-types" }
+glin-client = { version = "0.1.0", path = "../glin-client" }
 
 # Contract metadata
 ink_metadata = { workspace = true }
