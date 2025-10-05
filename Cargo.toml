@@ -1,0 +1,52 @@
+[workspace]
+members = [
+    "glin-client",
+    "glin-contracts",
+    "glin-types",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["GLIN AI <dev@glin.ai>"]
+license = "Apache-2.0"
+repository = "https://github.com/glin-ai/glin-sdk-rust"
+homepage = "https://glin.ai"
+documentation = "https://docs.rs/glin-sdk-rust"
+readme = "README.md"
+keywords = ["blockchain", "substrate", "polkadot", "ink", "glin"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+description = "Official Rust SDK for GLIN Network - A decentralized AI training platform"
+
+[workspace.dependencies]
+# Substrate & Contract interaction
+subxt = "0.44"
+subxt-signer = "0.44"
+subxt-core = "0.44"
+
+# Contract metadata
+ink_metadata = "5.1"
+scale = { package = "parity-scale-codec", version = "3.6", features = ["derive"] }
+scale-info = { version = "2.11", features = ["derive"] }
+
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+hex = "0.4"
+sp-core-hashing = "15.0"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# CLI utilities
+colored = "2.1"
+indicatif = "0.17"

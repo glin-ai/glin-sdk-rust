@@ -1,0 +1,42 @@
+[package]
+name = "glin-contracts"
+description = "Contract metadata, deployment, and interaction utilities for GLIN Network"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Local dependencies
+glin-types = { path = "../glin-types" }
+glin-client = { path = "../glin-client" }
+
+# Contract metadata
+ink_metadata = { workspace = true }
+scale = { workspace = true }
+scale-info = { workspace = true }
+
+# Substrate
+subxt = { workspace = true }
+subxt-core = { workspace = true }
+
+# HTTP client
+reqwest = { workspace = true }
+
+# Utilities
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+hex = { workspace = true }
+sp-core-hashing = { workspace = true }
+
+# File system
+dirs = { version = "5.0" }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
