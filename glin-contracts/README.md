@@ -1,10 +1,15 @@
-# glin-contracts
+<div align="center">
+  <img src="https://raw.githubusercontent.com/glin-ai/glin-sdk-rust/main/assets/glin-coin.svg" alt="GLIN Logo" width="100" height="100">
+
+  # glin-contracts
 
 [![crates.io](https://img.shields.io/crates/v/glin-contracts.svg)](https://crates.io/crates/glin-contracts)
 [![docs.rs](https://docs.rs/glin-contracts/badge.svg)](https://docs.rs/glin-contracts)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
 
 Contract metadata, deployment, and interaction utilities for GLIN Network.
+
+</div>
 
 ## Overview
 

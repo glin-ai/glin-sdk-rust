@@ -1,10 +1,15 @@
-# glin-client
+<div align="center">
+  <img src="https://raw.githubusercontent.com/glin-ai/glin-sdk-rust/main/assets/glin-coin.svg" alt="GLIN Logo" width="100" height="100">
+
+  # glin-client
 
 [![crates.io](https://img.shields.io/crates/v/glin-client.svg)](https://crates.io/crates/glin-client)
 [![docs.rs](https://docs.rs/glin-client/badge.svg)](https://docs.rs/glin-client)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
 
 Network connection and RPC operations for GLIN Network.
+
+</div>
 
 ## Overview
 

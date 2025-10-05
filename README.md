@@ -1,10 +1,15 @@
-# GLIN SDK - Rust
+<div align="center">
+  <img src="https://raw.githubusercontent.com/glin-ai/glin-sdk-rust/main/assets/glin-coin.svg" alt="GLIN Logo" width="120" height="120">
+
+  # GLIN SDK - Rust
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 [![Crates.io](https://img.shields.io/crates/v/glin-sdk-rust.svg)](https://crates.io/crates/glin-sdk-rust)
 
 Official Rust SDK for [GLIN Network](https://glin.ai) - A decentralized AI training platform built on Substrate.
+
+</div>
 
 ## 🎯 Overview
 

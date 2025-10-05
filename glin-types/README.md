@@ -1,10 +1,15 @@
-# glin-types
+<div align="center">
+  <img src="https://raw.githubusercontent.com/glin-ai/glin-sdk-rust/main/assets/glin-coin.svg" alt="GLIN Logo" width="100" height="100">
+
+  # glin-types
 
 [![crates.io](https://img.shields.io/crates/v/glin-types.svg)](https://crates.io/crates/glin-types)
 [![docs.rs](https://docs.rs/glin-types/badge.svg)](https://docs.rs/glin-types)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
 
 Shared types and data structures for GLIN Network SDK.
+
+</div>
 
 ## Overview
 
