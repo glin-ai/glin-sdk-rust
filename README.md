@@ -31,6 +31,15 @@ Complete Rust SDK for building applications on GLIN Network. Provides **all core
 - ✅ Contract verification utilities
 - 🔧 Type-safe contract code generation
 
+## 📚 Documentation
+
+**[📖 Full Documentation →](https://docs.glin.ai/sdk/rust/setup)**
+
+- **[Getting Started →](https://docs.glin.ai/sdk/getting-started/overview)**
+- **[Rust SDK Setup →](https://docs.glin.ai/sdk/rust/setup)**
+- **[Examples →](https://docs.glin.ai/sdk/examples/create-cli-tool)**
+- **[API Reference →](https://docs.glin.ai/sdk/rust/api-reference)**
+
 ## 📦 Workspace Structure
 
 This is a Cargo workspace containing three crates:
@@ -193,7 +202,7 @@ GLIN Network provides SDKs for multiple languages:
 - **glin-sdk-rust** (this repo): Rust SDK (backend + CLI tools)
 - **glin-sdk-python** (planned): Python SDK (data science + analytics)
 
-All SDKs share the same **core features**, with language-specific extensions. See [SDK Architecture](https://docs.glin.ai/sdk-architecture) for details.
+All SDKs share the same **core features**, with language-specific extensions. See **[Rust SDK Documentation →](https://docs.glin.ai/sdk/rust/setup)** for details.
 
 ## 🛠️ Development
 
