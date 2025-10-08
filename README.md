@@ -107,7 +107,7 @@ use glin_contracts::{fetch_contract_metadata, MetadataFetchOptions};
 
 let options = MetadataFetchOptions {
     local_path: None,
-    explorer_url: Some("https://glincscan.com".to_string()),
+    explorer_url: Some("https://glinscan.com".to_string()),
     cache_dir: Some("/home/user/.glin/cache".to_string()),
 };
 
@@ -158,7 +158,7 @@ println!("{} Connected!", "✓".green().bold());
 
 ### For Indexer Developers
 
-Build high-performance blockchain indexers like [glincscan](https://github.com/glin-ai/glincscan):
+Build high-performance blockchain indexers like [glinscan](https://github.com/glin-ai/glinscan):
 
 ```rust
 use glin_client::create_client;
@@ -193,7 +193,7 @@ See [examples/block_indexer.rs](examples/block_indexer.rs) for a complete exampl
 ## 🏗️ Projects Using This SDK
 
 - **[glin-forge](https://github.com/glin-ai/glin-forge)**: CLI tools for ink! contract development
-- **[glincscan](https://github.com/glin-ai/glincscan)** (planned): Blockchain explorer and indexer
+- **[glinscan](https://github.com/glin-ai/glinscan)** (planned): Blockchain explorer and indexer
 - **Your project here!** 🚀
 
 ## 📚 Architecture

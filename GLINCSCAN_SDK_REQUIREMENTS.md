@@ -1,10 +1,10 @@
-# glincscan SDK Requirements Analysis
+# glinscan SDK Requirements Analysis
 
-> **Document Purpose**: Comprehensive analysis of current glin-sdk-rust capabilities and requirements for building glincscan (blockchain explorer and contract verification platform).
+> **Document Purpose**: Comprehensive analysis of current glin-sdk-rust capabilities and requirements for building glinscan (blockchain explorer and contract verification platform).
 
 **Date**: October 5, 2025
 **SDK Version**: 0.1.2
-**Target**: glincscan - Blockchain Explorer, Indexer, and Contract Verifier
+**Target**: glinscan - Blockchain Explorer, Indexer, and Contract Verifier
 
 ---
 
@@ -12,7 +12,7 @@
 
 1. [Executive Summary](#executive-summary)
 2. [Current SDK Capabilities](#current-sdk-capabilities)
-3. [glincscan Architecture Requirements](#glincscan-architecture-requirements)
+3. [glinscan Architecture Requirements](#glinscan-architecture-requirements)
 4. [Gap Analysis](#gap-analysis)
 5. [Implementation Guidance](#implementation-guidance)
 6. [New SDK Features Needed](#new-sdk-features-needed)
@@ -33,7 +33,7 @@ The glin-sdk-rust provides a **minimal but functional foundation** for blockchai
 - ✅ **Metadata fetching** with multi-strategy fallback
 - ✅ **SCALE encoding/decoding** for contract arguments
 
-### What's Missing for glincscan
+### What's Missing for glinscan
 
 The SDK lacks **critical features** needed for a production blockchain explorer:
 
@@ -46,7 +46,7 @@ The SDK lacks **critical features** needed for a production blockchain explorer:
 - ❌ **Database integration helpers**
 - ❌ **WASM verification utilities**
 
-**Bottom Line**: The SDK is designed for **application developers** (build DApps), but glincscan needs **indexer-specific features** for blockchain data extraction and verification.
+**Bottom Line**: The SDK is designed for **application developers** (build DApps), but glinscan needs **indexer-specific features** for blockchain data extraction and verification.
 
 ---
 
@@ -142,7 +142,7 @@ use glin_contracts::{fetch_contract_metadata, MetadataFetchOptions};
 
 let options = MetadataFetchOptions {
     local_path: None,
-    explorer_url: Some("https://glincscan.com".to_string()),
+    explorer_url: Some("https://glinscan.com".to_string()),
     cache_dir: Some("/home/user/.glin/cache".to_string()),
 };
 
@@ -188,9 +188,9 @@ This crate should contain:
 
 ---
 
-## glincscan Architecture Requirements
+## glinscan Architecture Requirements
 
-Based on the explorer template and indexer documentation, glincscan needs **three major components**:
+Based on the explorer template and indexer documentation, glinscan needs **three major components**:
 
 ### Architecture Overview
 
@@ -499,7 +499,7 @@ async fn main() -> anyhow::Result<()> {
 
     let options = MetadataFetchOptions {
         local_path: None,
-        explorer_url: Some("https://glincscan.com".to_string()),
+        explorer_url: Some("https://glinscan.com".to_string()),
         cache_dir: Some(dirs::home_dir()
             .unwrap()
             .join(".glin/cache")
@@ -1297,7 +1297,7 @@ cargo test --features integration-tests
 
 ## Conclusion
 
-The **glin-sdk-rust** provides a solid foundation for blockchain interaction, but **lacks indexer-specific features** needed for glincscan. The recommended approach is to:
+The **glin-sdk-rust** provides a solid foundation for blockchain interaction, but **lacks indexer-specific features** needed for glinscan. The recommended approach is to:
 
 1. **Extend existing crates** with missing features
 2. **Create new `glin-indexer` crate** for indexing utilities
