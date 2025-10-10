@@ -5,9 +5,9 @@
 pub mod batch;
 
 use anyhow::Result;
-use subxt::{OnlineClient, PolkadotConfig};
 use subxt::backend::legacy::LegacyRpcMethods;
 use subxt::backend::rpc::RpcClient;
+use subxt::{OnlineClient, PolkadotConfig};
 use subxt_signer::sr25519::Keypair;
 
 pub type GlinConfig = PolkadotConfig;
@@ -67,8 +67,8 @@ pub fn get_dev_account(name: &str) -> Result<Keypair> {
 /// - Secret URI format (e.g., `//Alice`)
 /// - BIP39 mnemonic phrases
 pub fn account_from_seed(seed: &str) -> Result<Keypair> {
-    use subxt_signer::SecretUri;
     use std::str::FromStr;
+    use subxt_signer::SecretUri;
 
     // Try as secret URI first (supports //Alice format)
     if let Ok(uri) = SecretUri::from_str(seed) {

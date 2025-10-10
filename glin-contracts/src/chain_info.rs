@@ -40,9 +40,7 @@ pub async fn get_contract_info(
         .fetch_raw(lookup_bytes)
         .await
         .context("Failed to fetch contract info")?
-        .ok_or_else(|| {
-            anyhow::anyhow!("Contract not found at address: {}", contract_address)
-        })?;
+        .ok_or_else(|| anyhow::anyhow!("Contract not found at address: {}", contract_address))?;
 
     // Decode the raw SCALE bytes into ContractInfo
     decode_contract_info_from_bytes(&raw_bytes)
@@ -75,8 +73,8 @@ fn decode_contract_info_from_bytes(encoded: &[u8]) -> Result<ContractInfo> {
 
     // Decode storage_deposit (u128 after code_hash)
     let mut cursor = &encoded[32..];
-    let storage_deposit = u128::decode(&mut cursor)
-        .context("Failed to decode storage_deposit from ContractInfo")?;
+    let storage_deposit =
+        u128::decode(&mut cursor).context("Failed to decode storage_deposit from ContractInfo")?;
 
     Ok(ContractInfo {
         code_hash,
@@ -97,8 +95,8 @@ fn parse_address(address: &str) -> Result<Vec<u8>> {
     }
 
     // Try SS58 decoding (Substrate addresses)
-    use subxt::utils::AccountId32;
     use std::str::FromStr;
+    use subxt::utils::AccountId32;
 
     let account = AccountId32::from_str(address)
         .context("Invalid contract address format (expected hex or SS58)")?;

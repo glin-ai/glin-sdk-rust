@@ -4,8 +4,8 @@
 
 use anyhow::{anyhow, Result};
 use glin_client::GlinClient;
-use serde::{Deserialize, Serialize};
 use scale::Decode;
+use serde::{Deserialize, Serialize};
 use subxt::events::EventDetails;
 
 /// Decoded event data
@@ -141,8 +141,6 @@ impl EventDecoder {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_decoder_creation() {
         // Decoder creation is tested in integration tests with real client

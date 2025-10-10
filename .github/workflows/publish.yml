@@ -1,0 +1,229 @@
+name: Version and Publish to crates.io
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'glin-types/**'
+      - 'glin-client/**'
+      - 'glin-contracts/**'
+      - 'glin-indexer/**'
+      - 'Cargo.toml'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish (or "all" for workspace)'
+        required: true
+        type: choice
+        options:
+          - all
+          - glin-types
+          - glin-client
+          - glin-contracts
+          - glin-indexer
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  detect-changes:
+    name: Detect Changed Packages
+    runs-on: ubuntu-latest
+    outputs:
+      changed_packages: ${{ steps.detect.outputs.packages }}
+      should_publish: ${{ steps.detect.outputs.should_publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed packages
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ "${{ inputs.package }}" = "all" ]; then
+              echo "packages=[\"glin-types\",\"glin-client\",\"glin-contracts\",\"glin-indexer\"]" >> $GITHUB_OUTPUT
+            else
+              echo "packages=[\"${{ inputs.package }}\"]" >> $GITHUB_OUTPUT
+            fi
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          else
+            # Detect changes from last commit
+            CHANGED_PACKAGES=$(git diff --name-only HEAD~1 HEAD | grep -E '^(glin-types|glin-client|glin-contracts|glin-indexer)/' | cut -d'/' -f1 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+
+            if [ "$CHANGED_PACKAGES" = "[]" ] || [ -z "$CHANGED_PACKAGES" ]; then
+              echo "packages=[]" >> $GITHUB_OUTPUT
+              echo "should_publish=false" >> $GITHUB_OUTPUT
+            else
+              echo "packages=$CHANGED_PACKAGES" >> $GITHUB_OUTPUT
+              echo "should_publish=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  test:
+    name: Test All Packages
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: cargo test --workspace --all-features
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run clippy
+        run: cargo clippy --workspace --all-features -- -D warnings
+
+  version-and-publish:
+    name: Version and Publish
+    needs: [detect-changes, test]
+    if: needs.detect-changes.outputs.should_publish == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.detect-changes.outputs.changed_packages) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine version bump
+        id: version
+        run: |
+          BUMP_TYPE="${{ inputs.version_bump }}"
+          if [ -z "$BUMP_TYPE" ]; then
+            # Auto-detect: check commit messages for keywords
+            COMMIT_MSG=$(git log -1 --pretty=%B)
+            if echo "$COMMIT_MSG" | grep -iE "^(breaking|major):"; then
+              BUMP_TYPE="major"
+            elif echo "$COMMIT_MSG" | grep -iE "^(feat|feature|minor):"; then
+              BUMP_TYPE="minor"
+            else
+              BUMP_TYPE="patch"
+            fi
+          fi
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Get current version
+        id: current_version
+        run: |
+          cd ${{ matrix.package }}
+          CURRENT_VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: new_version
+        run: |
+          cd ${{ matrix.package }}
+
+          # Bump version
+          cargo set-version --bump ${{ steps.version.outputs.bump_type }}
+
+          # Get new version
+          NEW_VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Update workspace version in root Cargo.toml
+          cd ..
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
+
+      - name: Update dependent package versions
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.version }}"
+          PACKAGE="${{ matrix.package }}"
+
+          # Update dependencies in other packages
+          for PKG_DIR in glin-types glin-client glin-contracts glin-indexer; do
+            if [ "$PKG_DIR" != "$PACKAGE" ] && [ -f "$PKG_DIR/Cargo.toml" ]; then
+              # Update the version requirement for the bumped package
+              sed -i "s/^$PACKAGE = { version = \"[^\"]*\"/glin-contracts = { version = \"$NEW_VERSION\"/" "$PKG_DIR/Cargo.toml"
+            fi
+          done
+
+      - name: Build package
+        run: |
+          cd ${{ matrix.package }}
+          cargo build --release
+
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cd ${{ matrix.package }}
+          cargo publish --token $CARGO_REGISTRY_TOKEN --allow-dirty
+
+      - name: Commit version bump
+        run: |
+          git add .
+          git commit -m "chore: bump ${{ matrix.package }} to v${{ steps.new_version.outputs.version }}"
+          git push
+
+      - name: Create Git tag
+        run: |
+          TAG="${{ matrix.package }}-v${{ steps.new_version.outputs.version }}"
+          git tag -a "$TAG" -m "Release ${{ matrix.package }} v${{ steps.new_version.outputs.version }}"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ matrix.package }}-v${{ steps.new_version.outputs.version }}
+          release_name: ${{ matrix.package }} v${{ steps.new_version.outputs.version }}
+          body: |
+            ## Changes in ${{ matrix.package }} v${{ steps.new_version.outputs.version }}
+
+            Published from commit ${{ github.sha }}
+
+            ### Installation
+            ```toml
+            ${{ matrix.package }} = "${{ steps.new_version.outputs.version }}"
+            ```
+          draft: false
+          prerelease: false

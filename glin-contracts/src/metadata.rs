@@ -1,9 +1,7 @@
 // Contract metadata parsing utilities using ink_metadata
 
 use anyhow::{Context, Result};
-use ink_metadata::{
-    InkProject, Selector,
-};
+use ink_metadata::{InkProject, Selector};
 use scale_info::form::PortableForm;
 use serde_json::Value as JsonValue;
 
@@ -33,7 +31,7 @@ pub fn get_constructor_spec<'a>(
 }
 
 /// Get default constructor (usually "new")
-pub fn get_default_constructor<'a>(metadata: &'a InkProject) -> Result<&'a ConstructorSpec> {
+pub fn get_default_constructor(metadata: &InkProject) -> Result<&ConstructorSpec> {
     // Try "new" first
     if let Some(ctor) = metadata
         .spec()
@@ -141,10 +139,10 @@ pub fn validate_metadata(metadata: &InkProject) -> Result<()> {
 }
 
 /// Get type definition from registry by type ID
-pub fn get_type_from_registry<'a>(
-    metadata: &'a InkProject,
+pub fn get_type_from_registry(
+    metadata: &InkProject,
     type_id: u32,
-) -> Option<&'a scale_info::Type<scale_info::form::PortableForm>> {
+) -> Option<&scale_info::Type<scale_info::form::PortableForm>> {
     metadata.registry().resolve(type_id)
 }
 

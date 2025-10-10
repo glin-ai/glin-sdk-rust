@@ -9,8 +9,6 @@ pub mod metadata_fetcher;
 pub mod verifier;
 
 // Re-export commonly used types
-pub use chain_info::{ContractInfo, get_contract_info};
-pub use metadata_fetcher::{
-    MetadataFetchOptions, fetch_contract_metadata, get_default_cache_dir,
-};
+pub use chain_info::{get_contract_info, ContractInfo};
+pub use metadata_fetcher::{fetch_contract_metadata, get_default_cache_dir, MetadataFetchOptions};
 pub use verifier::{ContractVerifier, VerificationResult};

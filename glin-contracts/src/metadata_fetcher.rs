@@ -40,12 +40,8 @@ pub async fn fetch_contract_metadata(
 
     // Strategy 3: Get code hash from blockchain
     let code_hash_hex = match crate::chain_info::get_contract_info(client, contract_address).await {
-        Ok(info) => {
-            Some(format!("0x{}", hex::encode(&info.code_hash)))
-        }
-        Err(_e) => {
-            None
-        }
+        Ok(info) => Some(format!("0x{}", hex::encode(info.code_hash))),
+        Err(_e) => None,
     };
 
     // Strategy 4: Fetch from explorer API
@@ -89,8 +85,8 @@ fn load_metadata_from_file(path: &str) -> Result<InkProject> {
 
     // Check if it's a .contract bundle file
     if path.ends_with(".contract") {
-        let bundle: serde_json::Value = serde_json::from_str(&content)
-            .context("Invalid .contract bundle format")?;
+        let bundle: serde_json::Value =
+            serde_json::from_str(&content).context("Invalid .contract bundle format")?;
 
         // Extract spec from bundle
         let metadata: InkProject = serde_json::from_value(bundle["spec"].clone())
@@ -115,9 +111,15 @@ async fn fetch_from_explorer(
     // Try common explorer API endpoints with both contract address and code hash
     let mut endpoints = vec![
         // Try contract address first
-        format!("{}/api/contract/{}/metadata", explorer_url, contract_address),
+        format!(
+            "{}/api/contract/{}/metadata",
+            explorer_url, contract_address
+        ),
         format!("{}/api/contracts/{}/abi", explorer_url, contract_address),
-        format!("{}/api/v1/contracts/{}/metadata", explorer_url, contract_address),
+        format!(
+            "{}/api/v1/contracts/{}/metadata",
+            explorer_url, contract_address
+        ),
     ];
 
     // If we have code hash, also try those endpoints

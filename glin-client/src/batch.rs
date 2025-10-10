@@ -62,12 +62,15 @@ impl BatchRpc {
     ///
     /// let results = futures::future::join_all(futures).await;
     /// ```
-    pub async fn fetch_storage_parallel<T>(&self, keys: Vec<Vec<u8>>) -> Result<Vec<Option<Vec<u8>>>> {
+    pub async fn fetch_storage_parallel<T>(
+        &self,
+        keys: Vec<Vec<u8>>,
+    ) -> Result<Vec<Option<Vec<u8>>>> {
         // Example pattern for parallel storage queries
         // Applications should replace this with their own typed queries
 
         let futures = keys.into_iter().map(|_key| {
-            let client = self.client.clone();
+            let _client = self.client.clone();
             async move {
                 // Placeholder: Applications implement with their metadata types
                 Ok::<Option<Vec<u8>>, anyhow::Error>(None)

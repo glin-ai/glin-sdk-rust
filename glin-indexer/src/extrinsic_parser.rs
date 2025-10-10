@@ -75,7 +75,10 @@ impl ExtrinsicParser {
     }
 
     /// Check if extrinsic is signed
-    pub fn is_signed(&self, extrinsic: &ExtrinsicDetails<subxt::PolkadotConfig, GlinClient>) -> bool {
+    pub fn is_signed(
+        &self,
+        extrinsic: &ExtrinsicDetails<subxt::PolkadotConfig, GlinClient>,
+    ) -> bool {
         extrinsic.is_signed()
     }
 }
@@ -92,7 +95,7 @@ mod tests {
 
     #[test]
     fn test_parser_creation() {
-        let parser = ExtrinsicParser::new();
+        let _parser = ExtrinsicParser::new();
         // Parser is tested in integration tests with real extrinsics
     }
 }

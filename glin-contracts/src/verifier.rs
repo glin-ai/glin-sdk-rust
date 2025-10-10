@@ -5,9 +5,9 @@
 
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use sp_core_hashing::blake2_256;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use sp_core_hashing::blake2_256;
 
 /// Contract verifier
 ///
@@ -17,16 +17,19 @@ use sp_core_hashing::blake2_256;
 /// # Example
 ///
 /// ```rust,no_run
-/// use glin_contracts::ContractVerifier;
+/// use glin_contracts::{ContractVerifier, VerificationResult};
 ///
 /// #[tokio::main]
 /// async fn main() -> anyhow::Result<()> {
 ///     let verifier = ContractVerifier::new("/tmp/verification")?;
+///     # let source_code = ""; // Placeholder for doctest
+///     # let cargo_toml = ""; // Placeholder for doctest
+///     # let deployed_code_hash = &[0u8; 32]; // Placeholder for doctest
 ///
 ///     let result = verifier.verify(
 ///         source_code,
 ///         cargo_toml,
-///         &deployed_code_hash
+///         deployed_code_hash
 ///     ).await?;
 ///
 ///     match result {

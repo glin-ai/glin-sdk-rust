@@ -2,12 +2,19 @@
 //!
 //! Provides a higher-level API for subscribing to blocks from GLIN Network.
 
+use anyhow::Result;
 use futures::stream::Stream;
 use glin_client::GlinClient;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use subxt::blocks::Block;
-use anyhow::Result;
+
+/// Type alias for the block stream
+type BlockStreamInner = Pin<
+    Box<
+        dyn Stream<Item = Result<Block<subxt::PolkadotConfig, GlinClient>, subxt::Error>> + Send,
+    >,
+>;
 
 /// Block streaming helper
 ///
@@ -33,7 +40,7 @@ use anyhow::Result;
 /// }
 /// ```
 pub struct BlockStream {
-    inner: Pin<Box<dyn Stream<Item = Result<Block<subxt::PolkadotConfig, GlinClient>, subxt::Error>> + Send>>,
+    inner: BlockStreamInner,
 }
 
 impl BlockStream {
@@ -65,6 +72,7 @@ impl Stream for BlockStream {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::StreamExt;
 
     #[tokio::test]
     #[ignore] // Requires running node

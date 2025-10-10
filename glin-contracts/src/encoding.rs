@@ -137,14 +137,15 @@ fn encode_composite(value_str: &str, type_id: u32, metadata: &InkProject) -> Res
         .resolve(type_id)
         .ok_or_else(|| anyhow::anyhow!("Type {} not found", type_id))?;
 
-    // Check if this is an AccountId32 (special case)
-    if ty.path.segments.last().map(|s| s.as_str()) == Some("AccountId32") {
+    // Check if this is an AccountId or AccountId32 (special case)
+    let last_segment = ty.path.segments.last().map(|s| s.as_str());
+    if last_segment == Some("AccountId32") || last_segment == Some("AccountId") {
         return encode_account_id(value_str);
     }
 
     // Try to parse as JSON for complex types
-    let json: JsonValue = serde_json::from_str(value_str)
-        .context("Failed to parse composite value as JSON")?;
+    let json: JsonValue =
+        serde_json::from_str(value_str).context("Failed to parse composite value as JSON")?;
 
     if let TypeDef::Composite(composite) = &ty.type_def {
         let mut encoded = Vec::new();
@@ -182,8 +183,8 @@ fn encode_account_id(value_str: &str) -> Result<Vec<u8>> {
 
     // Try parsing as hex
     if value_str.starts_with("0x") {
-        let bytes = hex::decode(value_str.trim_start_matches("0x"))
-            .context("Invalid hex address")?;
+        let bytes =
+            hex::decode(value_str.trim_start_matches("0x")).context("Invalid hex address")?;
         if bytes.len() == 32 {
             return Ok(bytes);
         }
@@ -230,7 +231,8 @@ fn encode_variant(value_str: &str, type_id: u32, metadata: &InkProject) -> Resul
                                 .to_string();
 
                             let field_type_id = field.ty.id;
-                            let field_bytes = encode_value_by_id(&field_value, field_type_id, metadata)?;
+                            let field_bytes =
+                                encode_value_by_id(&field_value, field_type_id, metadata)?;
                             encoded.extend_from_slice(&field_bytes);
                         }
                     }
