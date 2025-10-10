@@ -13,7 +13,7 @@ categories.workspace = true
 
 [dependencies]
 # Local dependencies
-glin-types = { version = "0.1", path = "../glin-types" }
+glin-types = { version = "0.1.4", path = "../glin-types" }
 glin-client = { version = "0.1", path = "../glin-client" }
 
 # Contract metadata

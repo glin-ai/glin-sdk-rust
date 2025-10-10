@@ -15,7 +15,7 @@ description = "Blockchain indexing utilities for GLIN Network - helpers for bloc
 [dependencies]
 # GLIN SDK dependencies
 glin-client = { version = "0.1", path = "../glin-client" }
-glin-types = { version = "0.1", path = "../glin-types" }
+glin-types = { version = "0.1.4", path = "../glin-types" }
 
 # Substrate interaction
 subxt.workspace = true
