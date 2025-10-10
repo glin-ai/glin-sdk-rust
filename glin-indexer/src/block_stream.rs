@@ -11,9 +11,7 @@ use subxt::blocks::Block;
 
 /// Type alias for the block stream
 type BlockStreamInner = Pin<
-    Box<
-        dyn Stream<Item = Result<Block<subxt::PolkadotConfig, GlinClient>, subxt::Error>> + Send,
-    >,
+    Box<dyn Stream<Item = Result<Block<subxt::PolkadotConfig, GlinClient>, subxt::Error>> + Send>,
 >;
 
 /// Block streaming helper

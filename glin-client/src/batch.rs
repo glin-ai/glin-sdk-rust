@@ -84,8 +84,6 @@ impl BatchRpc {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_batch_creation() {
         // Tested in integration tests with real client

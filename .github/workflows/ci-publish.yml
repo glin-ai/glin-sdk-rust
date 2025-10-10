@@ -1,19 +1,14 @@
-name: Version and Publish to crates.io
+name: CI and Publish
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'glin-types/**'
-      - 'glin-client/**'
-      - 'glin-contracts/**'
-      - 'glin-indexer/**'
-      - 'Cargo.toml'
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
   workflow_dispatch:
     inputs:
       package:
-        description: 'Package to publish (or "all" for workspace)'
+        description: 'Package to publish (or "all")'
         required: true
         type: choice
         options:
@@ -33,10 +28,106 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
+  # Stage 1: Quality Checks (always runs)
+  fmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy Lints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable, beta]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build
+        run: cargo build --all-features --verbose
+
+      - name: Run tests
+        run: cargo test --all-features --verbose
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check documentation
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run cargo-audit
+        uses: rustsec/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Stage 2: Detect Changes (only on main branch pushes)
   detect-changes:
     name: Detect Changed Packages
+    needs: [fmt, clippy, test, docs, security-audit]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       changed_packages: ${{ steps.detect.outputs.packages }}
@@ -61,55 +152,20 @@ jobs:
             CHANGED_PACKAGES=$(git diff --name-only HEAD~1 HEAD | grep -E '^(glin-types|glin-client|glin-contracts|glin-indexer)/' | cut -d'/' -f1 | sort -u | jq -R -s -c 'split("\n")[:-1]')
 
             if [ "$CHANGED_PACKAGES" = "[]" ] || [ -z "$CHANGED_PACKAGES" ]; then
+              echo "No package changes detected"
               echo "packages=[]" >> $GITHUB_OUTPUT
               echo "should_publish=false" >> $GITHUB_OUTPUT
             else
+              echo "Changed packages: $CHANGED_PACKAGES"
               echo "packages=$CHANGED_PACKAGES" >> $GITHUB_OUTPUT
               echo "should_publish=true" >> $GITHUB_OUTPUT
             fi
           fi
 
-  test:
-    name: Test All Packages
-    needs: detect-changes
-    if: needs.detect-changes.outputs.should_publish == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo index
-        uses: actions/cache@v4
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo build
-        uses: actions/cache@v4
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run tests
-        run: cargo test --workspace --all-features
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Run clippy
-        run: cargo clippy --workspace --all-features -- -D warnings
-
+  # Stage 3: Version and Publish (only after ALL checks pass)
   version-and-publish:
-    name: Version and Publish
-    needs: [detect-changes, test]
+    name: Version and Publish ${{ matrix.package }}
+    needs: [detect-changes]
     if: needs.detect-changes.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     strategy:
@@ -121,7 +177,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-edit
@@ -137,7 +193,7 @@ jobs:
         run: |
           BUMP_TYPE="${{ inputs.version_bump }}"
           if [ -z "$BUMP_TYPE" ]; then
-            # Auto-detect: check commit messages for keywords
+            # Auto-detect from commit message
             COMMIT_MSG=$(git log -1 --pretty=%B)
             if echo "$COMMIT_MSG" | grep -iE "^(breaking|major):"; then
               BUMP_TYPE="major"
@@ -148,6 +204,7 @@ jobs:
             fi
           fi
           echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "Detected version bump: $BUMP_TYPE"
 
       - name: Get current version
         id: current_version
@@ -155,6 +212,7 @@ jobs:
           cd ${{ matrix.package }}
           CURRENT_VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
           echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
 
       - name: Bump version
         id: new_version
@@ -167,6 +225,7 @@ jobs:
           # Get new version
           NEW_VERSION=$(cargo pkgid | cut -d# -f2 | cut -d: -f2)
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
 
           # Update workspace version in root Cargo.toml
           cd ..
@@ -177,18 +236,14 @@ jobs:
           NEW_VERSION="${{ steps.new_version.outputs.version }}"
           PACKAGE="${{ matrix.package }}"
 
+          echo "Updating dependencies for $PACKAGE to $NEW_VERSION"
+
           # Update dependencies in other packages
           for PKG_DIR in glin-types glin-client glin-contracts glin-indexer; do
             if [ "$PKG_DIR" != "$PACKAGE" ] && [ -f "$PKG_DIR/Cargo.toml" ]; then
-              # Update the version requirement for the bumped package
-              sed -i "s/^$PACKAGE = { version = \"[^\"]*\"/glin-contracts = { version = \"$NEW_VERSION\"/" "$PKG_DIR/Cargo.toml"
+              sed -i "s/^$PACKAGE = { version = \"[^\"]*\"/$PACKAGE = { version = \"$NEW_VERSION\"/" "$PKG_DIR/Cargo.toml"
             fi
           done
-
-      - name: Build package
-        run: |
-          cd ${{ matrix.package }}
-          cargo build --release
 
       - name: Publish to crates.io
         env:
@@ -218,6 +273,8 @@ jobs:
           release_name: ${{ matrix.package }} v${{ steps.new_version.outputs.version }}
           body: |
             ## Changes in ${{ matrix.package }} v${{ steps.new_version.outputs.version }}
+
+            Bumped from v${{ steps.current_version.outputs.version }} to v${{ steps.new_version.outputs.version }} (${{ steps.version.outputs.bump_type }})
 
             Published from commit ${{ github.sha }}
 

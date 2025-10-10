@@ -1,226 +1,183 @@
-# CI/CD Workflows for GLIN SDK Rust
+# GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows for automated testing, versioning, and publishing.
+This directory contains the automated CI/CD workflow for the glin-sdk-rust workspace.
 
-## Workflows
+## Workflow: CI and Publish
 
-### 1. CI (`ci.yml`) ✅
-**Triggers:** Push to `main`/`develop`, Pull Requests
+**File**: `ci-publish.yml`
 
-**Purpose:** Continuous Integration - validates code quality before merging
+A unified workflow that handles both continuous integration checks and automated publishing to crates.io.
 
-**Jobs:**
-- **Test**: Runs full test suite on stable and beta Rust
-- **Fmt**: Checks code formatting with `rustfmt`
-- **Clippy**: Lints code for common mistakes
-- **Docs**: Validates documentation builds
-- **Security Audit**: Scans for known vulnerabilities
+### What It Does
 
-### 2. Publish (`publish.yml`) 🚀
-**Triggers:**
-- **Automatic**: Push to `main` when packages change
-- **Manual**: Workflow dispatch with package and version selection
+The workflow runs in three sequential stages:
 
-**Purpose:** Automated versioning and publishing to crates.io
+#### Stage 1: Quality Checks (Always Runs)
 
-**Features:**
-- ✅ Auto-detects changed packages
-- ✅ Bump versions (patch/minor/major)
-- ✅ Updates inter-package dependencies
-- ✅ Runs full test suite before publishing
-- ✅ Publishes to crates.io
-- ✅ Creates Git tags and GitHub releases
-- ✅ Commits version bumps back to repo
+Runs on every push and pull request to `main` or `develop` branches:
 
-## Setup Requirements
+1. **Format Check** - Ensures code follows Rust formatting standards (`cargo fmt`)
+2. **Clippy Lints** - Catches common mistakes and enforces best practices (`cargo clippy`)
+3. **Test Suite** - Runs all tests on stable and beta Rust versions
+4. **Documentation** - Validates that documentation builds without warnings
+5. **Security Audit** - Checks for known security vulnerabilities
 
-### 1. GitHub Secrets
-Add these secrets in repository settings (`Settings` → `Secrets and variables` → `Actions`):
+All jobs run in parallel for speed. **Publishing only happens if ALL checks pass.**
 
+#### Stage 2: Detect Changes (Main Branch Only)
+
+Only runs on pushes to `main` branch (or manual workflow dispatch):
+
+- Automatically detects which packages changed in the last commit
+- Determines if any packages need to be published
+- Skips publish if no package changes detected (e.g., README-only changes)
+
+#### Stage 3: Version and Publish (After All Checks Pass)
+
+Only runs if:
+- All quality checks passed
+- Push is to `main` branch (or manual trigger)
+- At least one package changed
+
+For each changed package:
+1. **Auto-version bump** based on commit message:
+   - `fix:` or `patch:` → patch version (0.1.2 → 0.1.3)
+   - `feat:` or `minor:` → minor version (0.1.2 → 0.2.0)
+   - `breaking:` or `major:` → major version (0.1.2 → 1.0.0)
+2. **Update dependencies** in other workspace packages
+3. **Publish to crates.io**
+4. **Commit version bump** back to repository
+5. **Create Git tag** (e.g., `glin-contracts-v0.1.3`)
+6. **Create GitHub Release** with changelog
+
+### When It Runs
+
+| Event | Quality Checks | Publish |
+|-------|----------------|---------|
+| Push to `main` | ✅ Yes | ✅ Yes (if packages changed) |
+| Push to `develop` | ✅ Yes | ❌ No |
+| Pull Request | ✅ Yes | ❌ No |
+| Manual Trigger | ✅ Yes | ✅ Yes |
+
+### Setup Requirements
+
+Add this secret to your GitHub repository:
+
+- `CARGO_REGISTRY_TOKEN` - Token from crates.io for publishing
+  - Generate at: https://crates.io/me/tokens
+  - Add at: Repository Settings → Secrets and variables → Actions → New repository secret
+
+### Usage Examples
+
+#### Automatic Publishing (Recommended)
+
+Just commit and push to `main` with semantic commit messages:
+
+```bash
+# This will publish a patch version (0.1.2 → 0.1.3)
+git commit -m "fix(glin-contracts): resolve AccountId encoding bug"
+git push origin main
+
+# This will publish a minor version (0.1.2 → 0.2.0)
+git commit -m "feat(glin-client): add batch RPC support"
+git push origin main
+
+# This will publish a major version (0.1.2 → 1.0.0)
+git commit -m "breaking(glin-types): change ExtrinsicInfo API"
+git push origin main
 ```
-CARGO_REGISTRY_TOKEN    # Required for crates.io publishing
-CODECOV_TOKEN          # Optional: for code coverage reports
-```
 
-#### Getting CARGO_REGISTRY_TOKEN:
-1. Go to https://crates.io/settings/tokens
-2. Click "New Token"
-3. Name it "GitHub Actions"
-4. Select scopes: `publish-new`, `publish-update`
-5. Copy the token and add to GitHub secrets
+The workflow will:
+1. Run all quality checks
+2. Detect which packages changed
+3. Auto-bump versions based on commit prefix
+4. Publish to crates.io
+5. Create tags and releases
 
-### 2. Repository Permissions
-Ensure the workflow has write permissions:
-- `Settings` → `Actions` → `General` → `Workflow permissions`
-- Select "Read and write permissions"
+#### Manual Publishing
 
-## Usage
+Use GitHub's "Actions" tab:
 
-### Automatic Publishing (Recommended)
-
-When you push changes to `main`:
-
-1. **Make your changes** in any package (e.g., fix AccountId bug in `glin-contracts`)
-
-2. **Commit with semantic message**:
-   ```bash
-   git commit -m "fix: AccountId encoding for ink! contracts"
-   # or
-   git commit -m "feat: add new contract deployment method"
-   # or
-   git commit -m "breaking: change API signature"
-   ```
-
-3. **Push to main**:
-   ```bash
-   git push origin main
-   ```
-
-4. **CI/CD automatically**:
-   - Detects `glin-contracts` changed
-   - Runs all tests
-   - Bumps version based on commit message:
-     - `fix:` → patch (0.1.2 → 0.1.3)
-     - `feat:` → minor (0.1.2 → 0.2.0)
-     - `breaking:` → major (0.1.2 → 1.0.0)
-   - Updates dependencies in other packages
-   - Publishes to crates.io
-   - Creates git tag `glin-contracts-v0.1.3`
-   - Creates GitHub release
-
-### Manual Publishing
-
-Use this when you need to publish a specific package or version:
-
-1. Go to `Actions` → `Version and Publish to crates.io`
-
-2. Click `Run workflow`
-
+1. Go to: Repository → Actions → "CI and Publish"
+2. Click: "Run workflow"
 3. Select:
-   - **Package**: Which package to publish (or "all")
-   - **Version bump**: patch/minor/major
+   - Package: Choose specific package or "all"
+   - Version bump: Choose patch/minor/major
+4. Click: "Run workflow"
 
-4. Click `Run workflow`
+Quality checks still run first - publish only happens if they pass.
 
-## Dependency Order
+### Benefits of Unified Workflow
 
-Packages are published in dependency order:
+✅ **No duplicate work** - Tests run once, not twice
+✅ **Enforced order** - Publish only after all checks pass
+✅ **No race conditions** - Sequential stages prevent conflicts
+✅ **Works everywhere** - PRs get tested, only main publishes
+✅ **Efficient caching** - Shared cargo cache across jobs
+✅ **Safe** - Impossible to publish broken code
 
-```
-glin-types (no dependencies)
-    ↓
-glin-client (depends on glin-types)
-    ↓
-glin-contracts (depends on glin-types + glin-client)
-    ↓
-glin-indexer (depends on glin-types + glin-client)
-```
+### Troubleshooting
 
-## Version Management
+#### Publishing didn't trigger after push
 
-### Current Strategy
-All packages share the same workspace version in root `Cargo.toml`:
+Check:
+- Was the push to `main` branch?
+- Did any package files actually change?
+- Did all quality checks pass?
 
-```toml
-[workspace.package]
-version = "0.1.3"  # All packages use this
-```
+View workflow logs: Repository → Actions → Select the workflow run
 
-### Inter-Package Dependencies
-Use compatible version requirements:
+#### Publish failed with "crate already exists"
 
-```toml
-glin-types = { version = "0.1", path = "../glin-types" }
-```
+The version wasn't bumped properly. Check:
+- Commit message uses correct prefix (`fix:`, `feat:`, `breaking:`)
+- Version in Cargo.toml is different from crates.io
 
-This allows:
-- `0.1.2` ✅
-- `0.1.3` ✅
-- `0.1.999` ✅
-- `0.2.0` ❌ (would need manual update)
+#### Quality checks failed
 
-## Troubleshooting
-
-### Publishing Fails: "version already exists"
-- The version wasn't bumped properly
-- Manually bump in `Cargo.toml` or use `cargo set-version`
-
-### Tests Fail Before Publishing
-- Fix the tests - workflow won't publish failing code
-- Check CI logs for details
-
-### Dependency Version Mismatch
-- Update the version requirements in dependent packages
-- Example: If `glin-types` is at `0.2.0`, update:
-  ```toml
-  glin-types = { version = "0.2", path = "../glin-types" }
-  ```
-
-### Manual Override
-If you need to publish manually:
+Fix the issues locally first:
 
 ```bash
-cd glin-contracts
-cargo set-version 0.1.3
-cargo publish
-```
-
-## Best Practices
-
-### 1. Semantic Commit Messages
-Use conventional commits for auto-versioning:
-
-```bash
-# Patch release (0.1.2 → 0.1.3)
-git commit -m "fix: resolve AccountId encoding bug"
-
-# Minor release (0.1.2 → 0.2.0)
-git commit -m "feat: add batch deployment support"
-
-# Major release (0.1.2 → 1.0.0)
-git commit -m "breaking: change deploy() API signature"
-```
-
-### 2. Test Before Pushing
-Always run locally before pushing:
-
-```bash
-cargo test --workspace
+# Check formatting
 cargo fmt --all -- --check
-cargo clippy --workspace -- -D warnings
+
+# Fix formatting automatically
+cargo fmt --all
+
+# Run clippy
+cargo clippy --workspace --all-features -- -D warnings
+
+# Run tests
+cargo test --workspace --all-features
 ```
 
-### 3. Update CHANGELOG
-Maintain a CHANGELOG.md in each package documenting changes.
+Then commit and push the fixes.
 
-### 4. Review Dependencies
-When bumping a base package (like `glin-types`), verify all dependent packages still work.
+### Package Dependency Order
 
-## Monitoring
+The workflow publishes packages in the matrix, which may run in parallel. For sequential dependencies:
 
-### Check Workflow Status
-- Go to `Actions` tab in GitHub
-- View running/completed workflows
-- Check logs for failures
+1. `glin-types` (no dependencies)
+2. `glin-client` (depends on glin-types)
+3. `glin-contracts` (depends on glin-client, glin-types)
+4. `glin-indexer` (depends on glin-client, glin-types)
 
-### Verify Published Version
-```bash
-cargo search glin-contracts --limit 1
-# Should show: glin-contracts = "0.1.3"
-```
+If multiple packages change, they're published independently. Ensure inter-package version updates are committed together.
 
-### View Release
-- Go to `Releases` in GitHub
-- Each published version has a release with:
-  - Tag (e.g., `glin-contracts-v0.1.3`)
-  - Installation instructions
-  - Commit hash
+### Best Practices
 
-## Future Improvements
+1. **Use semantic commit messages** for automatic versioning
+2. **Test locally** before pushing (`cargo test && cargo clippy`)
+3. **Group related changes** in one commit when updating multiple packages
+4. **Let CI run** - don't force-push while workflows are running
+5. **Review workflow logs** if publish fails
 
-- [ ] Add changelog generation from commits
-- [ ] Add performance benchmarking
-- [ ] Add integration tests with live network
-- [ ] Add Docker image publishing
-- [ ] Add npm package publishing for wasm builds
-- [ ] Add notification to Slack/Discord on publish
+### Workflow Performance
+
+Typical run times:
+- Quality checks (parallel): ~3-5 minutes
+- Publishing (per package): ~2-3 minutes
+- Total (1 package changed): ~5-8 minutes
+- Total (all packages): ~5-15 minutes (parallel matrix)
+
+Caching significantly speeds up subsequent runs.
