@@ -26,6 +26,10 @@ on:
           - minor
           - major
 
+permissions:
+  contents: write
+  pull-requests: read
+
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
