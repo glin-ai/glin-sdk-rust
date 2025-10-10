@@ -235,20 +235,6 @@ jobs:
           cd ..
           sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
 
-      - name: Update dependent package versions
-        run: |
-          NEW_VERSION="${{ steps.new_version.outputs.version }}"
-          PACKAGE="${{ matrix.package }}"
-
-          echo "Updating dependencies for $PACKAGE to $NEW_VERSION"
-
-          # Update dependencies in other packages
-          for PKG_DIR in glin-types glin-client glin-contracts glin-indexer; do
-            if [ "$PKG_DIR" != "$PACKAGE" ] && [ -f "$PKG_DIR/Cargo.toml" ]; then
-              sed -i "s/^$PACKAGE = { version = \"[^\"]*\"/$PACKAGE = { version = \"$NEW_VERSION\"/" "$PKG_DIR/Cargo.toml"
-            fi
-          done
-
       - name: Publish to crates.io
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
