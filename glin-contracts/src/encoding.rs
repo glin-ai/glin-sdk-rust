@@ -17,6 +17,18 @@ pub fn encode_args(
     param_specs: &[MessageParamSpec],
     metadata: &InkProject,
 ) -> Result<Vec<u8>> {
+    // Debug: write to file
+    use std::io::Write;
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/glin_encode_debug.log")
+    {
+        let _ = writeln!(file, "\n=== ENCODE_ARGS CALLED ===");
+        let _ = writeln!(file, "Args: {:?}", args);
+        let _ = writeln!(file, "Param count: {}", param_specs.len());
+    }
+
     if args.len() != param_specs.len() {
         anyhow::bail!(
             "Argument count mismatch: expected {}, got {}",
@@ -27,9 +39,20 @@ pub fn encode_args(
 
     let mut encoded = Vec::new();
 
-    for (arg_str, param) in args.iter().zip(param_specs.iter()) {
+    for (i, (arg_str, param)) in args.iter().zip(param_specs.iter()).enumerate() {
         // Get type ID from param
         let type_id = param.ty().ty().id;
+
+        // Debug log
+        if let Ok(mut file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("/tmp/glin_encode_debug.log")
+        {
+            let _ = writeln!(file, "\nArg {}: '{}'", i, arg_str);
+            let _ = writeln!(file, "  Type ID: {}", type_id);
+        }
+
         let arg_bytes = encode_value_by_id(arg_str, type_id, metadata)?;
         encoded.extend_from_slice(&arg_bytes);
     }
@@ -45,10 +68,22 @@ fn encode_value_by_id(value_str: &str, type_id: u32, metadata: &InkProject) -> R
         .resolve(type_id)
         .ok_or_else(|| anyhow::anyhow!("Type {} not found in registry", type_id))?;
 
+    eprintln!("[DEBUG] encode_value_by_id:");
+    eprintln!("  Type ID: {}", type_id);
+    eprintln!("  Type path: {}", ty.path);
+    eprintln!("  Value: {}", value_str);
+    eprintln!("  TypeDef: {:?}", std::mem::discriminant(&ty.type_def));
+
     // Access type_def field directly (not deprecated)
     match &ty.type_def {
-        TypeDef::Primitive(prim) => encode_primitive(value_str, prim),
-        TypeDef::Composite(_) => encode_composite(value_str, type_id, metadata),
+        TypeDef::Primitive(prim) => {
+            eprintln!("  -> Using primitive encoding");
+            encode_primitive(value_str, prim)
+        }
+        TypeDef::Composite(_) => {
+            eprintln!("  -> Using composite encoding");
+            encode_composite(value_str, type_id, metadata)
+        }
         TypeDef::Variant(_) => encode_variant(value_str, type_id, metadata),
         TypeDef::Sequence(_) => encode_sequence(value_str, type_id, metadata),
         TypeDef::Array(_) => encode_array(value_str, type_id, metadata),
@@ -137,13 +172,34 @@ fn encode_composite(value_str: &str, type_id: u32, metadata: &InkProject) -> Res
         .resolve(type_id)
         .ok_or_else(|| anyhow::anyhow!("Type {} not found", type_id))?;
 
+    // Debug: write to file
+    use std::io::Write;
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/glin_encode_debug.log")
+    {
+        let _ = writeln!(file, "[DEBUG] Encoding composite type:");
+        let _ = writeln!(file, "  Type ID: {}", type_id);
+        let _ = writeln!(file, "  Type path: {}", ty.path);
+        let _ = writeln!(file, "  All segments: {:?}", ty.path.segments);
+        let _ = writeln!(file, "  Value: {}", value_str);
+        let last_segment = ty.path.segments.last().map(|s| s.as_str());
+        let _ = writeln!(file, "  Last segment: {:?}", last_segment);
+        let _ = writeln!(file, "  Is AccountId32? {}", last_segment == Some("AccountId32"));
+        let _ = writeln!(file, "  Is AccountId? {}", last_segment == Some("AccountId"));
+    }
+
     // Check if this is an AccountId or AccountId32 (special case)
     let last_segment = ty.path.segments.last().map(|s| s.as_str());
+
     if last_segment == Some("AccountId32") || last_segment == Some("AccountId") {
+        eprintln!("  -> Detected as AccountId, using special encoding");
         return encode_account_id(value_str);
     }
 
     // Try to parse as JSON for complex types
+    eprintln!("  -> Attempting JSON parse for composite");
     let json: JsonValue =
         serde_json::from_str(value_str).context("Failed to parse composite value as JSON")?;
 
